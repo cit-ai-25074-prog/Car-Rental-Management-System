@@ -1,0 +1,385 @@
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// Base Class
+class Vehicle {
+protected:
+    int id;
+    string brand;
+    string model;
+    double price;
+    bool available;
+
+public:
+    Vehicle(int i, string b, string m, double p)
+        : id(i), brand(b), model(m), price(p), available(true) {}
+
+    virtual ~Vehicle() {}
+
+    int getId() const {
+        return id;
+    }
+
+    string getBrand() const {
+        return brand;
+    }
+
+    double getPrice() const {
+        return price;
+    }
+
+    bool isAvailable() const {
+        return available;
+    }
+
+    void setAvailable(bool status) {
+        available = status;
+    }
+
+    virtual void display() const = 0;
+};
+
+// Derived Class
+class Car : public Vehicle {
+private:
+    int year;
+
+public:
+    Car(int i, string b, string m, double p, int y)
+        : Vehicle(i, b, m, p), year(y) {}
+
+    void display() const override {
+        cout << "ID: " << id
+             << " | Brand: " << brand
+             << " | Model: " << model
+             << " | Year: " << year
+             << " | Price/Day: " << price
+             << " | Status: "
+             << (available ? "Available" : "Rented")
+             << endl;
+    }
+};
+
+// Customer Class
+class Customer {
+private:
+    int id;
+    string name;
+    string phone;
+
+public:
+    Customer(int i, string n, string p)
+        : id(i), name(n), phone(p) {}
+
+    int getId() const {
+        return id;
+    }
+
+    string getName() const {
+        return name;
+    }
+
+    void display() const {
+        cout << "ID: " << id
+             << " | Name: " << name
+             << " | Phone: " << phone << endl;
+    }
+};
+
+// Rental System Class
+class RentalSystem {
+private:
+    vector<Vehicle*> cars;
+    vector<Customer> customers;
+
+    Vehicle* findCar(int id) const {
+        for (Vehicle* car : cars) {
+            if (car->getId() == id)
+                return car;
+        }
+        return nullptr;
+    }
+
+    Customer* findCustomer(int id) {
+        for (Customer& c : customers) {
+            if (c.getId() == id)
+                return &c;
+        }
+        return nullptr;
+    }
+
+public:
+    RentalSystem() {}
+
+    // Destructor
+    ~RentalSystem() {
+        for (Vehicle* car : cars) {
+            delete car;
+        }
+    }
+
+    // Add Car
+    void addCar() {
+        int id, year;
+        string brand, model;
+        double price;
+
+        cout << "Enter Car ID: ";
+        cin >> id;
+
+        if (findCar(id) != nullptr) {
+            cout << "Car ID already exists!\n";
+            return;
+        }
+
+        cout << "Enter Brand: ";
+        getline(cin >> ws, brand);
+
+        cout << "Enter Model: ";
+        getline(cin, model);
+
+        cout << "Enter Year: ";
+        cin >> year;
+
+        cout << "Enter Price Per Day: ";
+        cin >> price;
+
+        if (year < 1886 || price <= 0) {
+            cout << "Invalid information!\n";
+            return;
+        }
+
+        cars.push_back(
+            new Car(id, brand, model, price, year)
+        );
+
+        cout << "Car added successfully!\n";
+    }
+
+    // Add Customer
+    void addCustomer() {
+        int id;
+        string name, phone;
+
+        cout << "Enter Customer ID: ";
+        cin >> id;
+
+        if (findCustomer(id) != nullptr) {
+            cout << "Customer ID already exists!\n";
+            return;
+        }
+
+        cout << "Enter Name: ";
+        getline(cin >> ws, name);
+
+        cout << "Enter Phone: ";
+        getline(cin, phone);
+
+        customers.emplace_back(id, name, phone);
+
+        cout << "Customer added successfully!\n";
+    }
+
+    // Display Cars
+    void displayCars() const {
+        if (cars.empty()) {
+            cout << "No cars found!\n";
+            return;
+        }
+
+        for (Vehicle* car : cars) {
+            car->display();
+        }
+    }
+
+    // Search Car by ID
+    void searchCar(int id) const {
+        Vehicle* car = findCar(id);
+
+        if (car != nullptr) {
+            car->display();
+        }
+        else {
+            cout << "Car not found!\n";
+        }
+    }
+
+    // Search Car by Brand
+    void searchCar(string brand) const {
+        bool found = false;
+
+        for (Vehicle* car : cars) {
+            if (car->getBrand() == brand) {
+                car->display();
+                found = true;
+            }
+        }
+
+        if (!found) {
+            cout << "No cars found for this brand!\n";
+        }
+    }
+
+    // Rent Car
+    void rentCar() {
+        int carId, customerId, days;
+
+        cout << "Enter Car ID: ";
+        cin >> carId;
+
+        Vehicle* car = findCar(carId);
+
+        if (car == nullptr) {
+            cout << "Car not found!\n";
+            return;
+        }
+
+        if (!car->isAvailable()) {
+            cout << "Car is already rented!\n";
+            return;
+        }
+
+        cout << "Enter Customer ID: ";
+        cin >> customerId;
+
+        Customer* customer = findCustomer(customerId);
+
+        if (customer == nullptr) {
+            cout << "Customer not found!\n";
+            return;
+        }
+
+        cout << "Enter Number of Days: ";
+        cin >> days;
+
+        if (days <= 0) {
+            cout << "Invalid number of days!\n";
+            return;
+        }
+
+        double total = car->getPrice() * days;
+
+        car->setAvailable(false);
+
+        cout << "\nRental completed successfully!\n";
+        cout << "Customer: " << customer->getName() << endl;
+        cout << "Total Cost: " << total << endl;
+    }
+
+    // Return Car
+    void returnCar() {
+        int id;
+
+        cout << "Enter Car ID: ";
+        cin >> id;
+
+        Vehicle* car = findCar(id);
+
+        if (car == nullptr) {
+            cout << "Car not found!\n";
+        }
+        else if (car->isAvailable()) {
+            cout << "Car is not rented!\n";
+        }
+        else {
+            car->setAvailable(true);
+            cout << "Car returned successfully!\n";
+        }
+    }
+
+    // Display Customers
+    void displayCustomers() const {
+        if (customers.empty()) {
+            cout << "No customers found!\n";
+            return;
+        }
+
+        for (const Customer& c : customers) {
+            c.display();
+        }
+    }
+
+    // Main Menu
+    void menu() {
+        int choice;
+
+        do {
+            cout << "\n===== CAR RENTAL MANAGEMENT SYSTEM =====\n";
+            cout << "1. Add Car\n";
+            cout << "2. Add Customer\n";
+            cout << "3. Display Cars\n";
+            cout << "4. Search Car by ID\n";
+            cout << "5. Search Car by Brand\n";
+            cout << "6. Rent Car\n";
+            cout << "7. Return Car\n";
+            cout << "8. Display Customers\n";
+            cout << "0. Exit\n";
+
+            cout << "Choose an option: ";
+            cin >> choice;
+
+            switch (choice) {
+                case 1:
+                    addCar();
+                    break;
+
+                case 2:
+                    addCustomer();
+                    break;
+
+                case 3:
+                    displayCars();
+                    break;
+
+                case 4: {
+                    int id;
+                    cout << "Enter Car ID: ";
+                    cin >> id;
+                    searchCar(id);
+                    break;
+                }
+
+                case 5: {
+                    string brand;
+                    cout << "Enter Brand: ";
+                    getline(cin >> ws, brand);
+                    searchCar(brand);
+                    break;
+                }
+
+                case 6:
+                    rentCar();
+                    break;
+
+                case 7:
+                    returnCar();
+                    break;
+
+                case 8:
+                    displayCustomers();
+                    break;
+
+                case 0:
+                    cout << "Thank you for using the system!\n";
+                    break;
+
+                default:
+                    cout << "Invalid choice! Try again.\n";
+            }
+
+        } while (choice != 0);
+    }
+};
+
+// Main Function
+int main() {
+    RentalSystem system;
+
+    system.menu();
+
+    return 0;
+}
